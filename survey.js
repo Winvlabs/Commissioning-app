@@ -43,7 +43,7 @@
     beamSpacing: ['Beam spacing', 'Afstand liggers', 'Entraxe des poutres'], beamOrient: ['Beam orientation', 'Oriëntatie liggers', 'Orientation des poutres'], roofMat: ['Roof material', 'Dakmateriaal', 'Matériau de toiture'],
     roofShape: ['Roof shape', 'Dakvorm', 'Forme de toiture'], roofing: ['Roofing type', 'Type dakbedekking', 'Type de couverture'], trap: ['Trapezoidal sheet metal roof details', 'Details trapeziumplaat', 'Détails tôle trapézoïdale'],
     trapA: ['Material thickness (a)', 'Materiaaldikte (a)', 'Épaisseur matériau (a)'], trapB: ['Bead spacing (b)', 'Afstand ribben (b)', 'Entraxe nervures (b)'], trapC: ['Width high beading (c)', 'Breedte hoge rib (c)', 'Largeur nervure haute (c)'], trapD: ['Panel thickness (d)', 'Paneeldikte (d)', 'Épaisseur panneau (d)'],
-    acIntro: ['Fill in the AC design: tap the schema to write and draw on it, and complete the fields below.', 'Vul het AC-ontwerp in: tik op het schema om erop te schrijven en te tekenen, en vul de velden hieronder aan.', 'Complétez la conception AC : touchez le schéma pour écrire et dessiner dessus, et remplissez les champs ci-dessous.'],
+    acIntro: ['Fill in the AC design directly on the schema: tap it to write with the pencil or type text (zoom in with two fingers).', 'Vul het AC-ontwerp rechtstreeks in op het schema: tik erop om met het potlood te schrijven of tekst te typen (inzoomen met twee vingers).', 'Complétez la conception AC directement sur le schéma : touchez-le pour écrire au crayon ou taper du texte (zoom à deux doigts).'],
     acSchema: ['AC schema', 'AC-schema', 'Schéma AC'], acEdit: ['✏️ Fill in / draw on schema', '✏️ Schema invullen / tekenen', '✏️ Compléter / dessiner le schéma'], acReset: ['Start from empty schema', 'Opnieuw met leeg schema', 'Recommencer avec un schéma vide'],
     mainTransfo: ['Main transformer', 'Hoofdtransformator', 'Transformateur principal'], connType: ['Connection type', 'Aansluitingstype', 'Type de raccordement'],
     gprs: ['GPRS signal (in decoupling cabinet area)', 'GPRS-signaal (bij ontkoppelingskast)', 'Signal GPRS (zone armoire de découplage)'], ethernet: ['Ethernet connection available', 'Ethernetaansluiting beschikbaar', 'Connexion Ethernet disponible'],
@@ -108,9 +108,6 @@
       { photos: 'roofPhotos' }, { k: 'roofRemarks', label: 'remarks', type: 'textarea' }] },
     { id: 'ac', tab: 'tabAc', items: [
       { schema: true },
-      { k: 'mainTransfo', type: 'choice', opts: ['existing', 'new'] }, { k: 'connType', type: 'choice', opts: ['tt', 'tnc', 'tns'] }, { k: 'gprs', type: 'choice', opts: ['fast', 'slow'] }, { k: 'ethernet', type: 'choice', opts: YN },
-      { k: 'transfoPower', type: 'text' }, { k: 'transfoCool', type: 'choice', opts: ['oil', 'dry'] }, { k: 'transfoV', type: 'text' }, { k: 'ucc', type: 'text' }, { k: 'mainBreaker', type: 'text' }, { k: 'eanNr', type: 'text' },
-      { k: 'invInfo', type: 'textarea' }, { k: 'cableInfo', type: 'textarea' },
       { photos: 'acPhotos' }, { k: 'acRemarks', label: 'remarks', type: 'textarea' }] },
     { id: 'notes', tab: 'tabNotes', items: [{ k: 'notesText', label: 'notes', type: 'textarea', rows: 8 }, { photos: 'notePhotos' }] }
   ];
@@ -197,9 +194,14 @@
     });
     const se = $('#schemaEdit');
     if (se) {
-      const edit = async () => { const d = await EDPTools.annotate(state.schema || 'assets/survey-ac-schema.jpg', { max: 2200, tool: 'text' }); if (d) { state.schema = d; save(); keep(renderPanel); } };
+      const edit = async () => {
+        /* keep the separate texts/lines so they can still be moved or changed later */
+        const editable = !state.schema || Array.isArray(state.schemaOps); let newOps = null;
+        const d = await EDPTools.annotate(editable ? 'assets/survey-ac-schema.jpg' : state.schema, { max: 2400, tool: 'pen', form: true, ops: editable ? state.schemaOps : null, keepOps: o => { newOps = o; } });
+        if (d) { state.schema = d; state.schemaOps = editable ? newOps : null; save(); keep(renderPanel); }
+      };
       se.onclick = edit; $('#schemaBox').onclick = edit;
-      const sr = $('#schemaReset'); if (sr) sr.onclick = () => { if (confirm(t('drawClearConfirm'))) { state.schema = null; save(); keep(renderPanel); } };
+      const sr = $('#schemaReset'); if (sr) sr.onclick = () => { if (confirm(t('drawClearConfirm'))) { state.schema = null; state.schemaOps = null; save(); keep(renderPanel); } };
     }
   }
   const keep = fn => { const y = window.scrollY; fn(); window.scrollTo(0, y); };

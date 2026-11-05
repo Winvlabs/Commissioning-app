@@ -250,3 +250,6 @@ body.no-scroll{overflow:hidden}
 .schema-box{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;cursor:pointer;margin:8px 0}
 .schema-box img{display:block;width:100%;height:auto}
 .sv-photos .photos{margin-top:10px}
+.draw-stage canvas{transform-origin:center center}
+.draw-zoom{top:auto;bottom:12px;right:12px}
+.draw-text-input{position:absolute;display:none;z-index:3;width:auto;min-width:150px;max-width:80%;padding:4px 8px;border:2px solid #1e88e5;border-radius:8px;background:#fffffff2;font-weight:700}
