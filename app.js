@@ -81,7 +81,7 @@
   function render() {
     if (!type) return;
     const m = modules[type];
-    $('#home').classList.add('hidden'); $('#report').classList.remove('hidden'); $('#actions').classList.remove('hidden'); $('#backBtn').classList.remove('hidden');
+    $('#home').classList.add('hidden'); $('#projects').classList.add('hidden'); $('#report').classList.remove('hidden'); $('#actions').classList.remove('hidden'); $('#backBtn').classList.remove('hidden');
     $('#appTitle').textContent = t(m.titleKey); $('#moduleTitle').textContent = t(m.titleKey); $('#moduleEyebrow').textContent = t(m.eyebrowKey);
     $('#editBtn').textContent = edit ? t('done') : t('editChecklist');
     $('#addQuestionBtn').classList.toggle('hidden', !edit);
@@ -91,7 +91,7 @@
     renderQuestions();
     renderGeneralPhotos();
     $('#generalPick').innerHTML = EDP.photoPicker();
-    EDP.bindPicker($('#generalPick'), async files => { state.generalPhotos.push(...(await EDP.readPhotos(files)).map(p => ({ data: p.data, caption: '' }))); save(); renderGeneralPhotos(); });
+    EDP.bindPicker($('#generalPick'), async added => { state.generalPhotos.push(...added.map(p => ({ data: p.data, caption: '' }))); save(); renderGeneralPhotos(); });
   }
   function renderGeneralPhotos() { renderPhotos(state.generalPhotos, $('#generalPhotoGrid'), () => { save(); renderGeneralPhotos(); }); }
 
@@ -112,7 +112,7 @@
         <div class="photos"></div>`;
       box.querySelectorAll('.status button').forEach(b => b.onclick = () => { a.status = a.status === b.dataset.v ? '' : b.dataset.v; save(); renderQuestions(); });
       box.querySelector('.qremark').oninput = e => { a.remark = e.target.value; save(); };
-      EDP.bindPicker(box, async files => { a.photos.push(...(await EDP.readPhotos(files)).map(p => ({ data: p.data, caption: '' }))); save(); renderQuestions(); });
+      EDP.bindPicker(box, async added => { a.photos.push(...added.map(p => ({ data: p.data, caption: '' }))); save(); renderQuestions(); });
       const ph = box.querySelector('.photos'), redraw = () => { save(); renderPhotos(a.photos, ph, redraw); };
       renderPhotos(a.photos, ph, redraw);
       box.querySelector('[data-rename]').onclick = () => { const x = prompt(t('questionName'), qLabel(q)); if (x !== null && x.trim()) { q.label = x.trim(); save(); renderQuestions(); } };
@@ -126,8 +126,9 @@
     host.innerHTML = '';
     arr.forEach((p, i) => {
       const x = document.createElement('div'); x.className = 'photo';
-      x.innerHTML = `<img src="${p.data}" alt="${esc(t('photo'))} ${i + 1}"><button type="button" class="x" title="${esc(t('removePhoto'))}">×</button><input value="${esc(p.caption || '')}" placeholder="${esc(t('caption'))}">`;
+      x.innerHTML = `<img src="${p.data}" alt="${esc(t('photo'))} ${i + 1}"><button type="button" class="ed" title="${esc(t('drawEdit'))}">✏️</button><button type="button" class="x" title="${esc(t('removePhoto'))}">×</button><input value="${esc(p.caption || '')}" placeholder="${esc(t('caption'))}">`;
       x.querySelector('.x').onclick = () => { arr.splice(i, 1); changed(); };
+      x.querySelector('.ed').onclick = () => EDP.editPhoto(p.data, d => { p.data = d; changed(); });
       x.querySelector('input').oninput = e => { p.caption = e.target.value; save(); };
       host.appendChild(x);
     });
@@ -192,6 +193,15 @@
   /* Home: who is signed in + own VCA progress */
   async function renderUserCard() {
     const card = $('#userCard'); if (!me) return;
+    /* Engineering: project reports only – no Site Safety tile and no VCA counter */
+    const eng = me.role === 'engineering';
+    $('#safetyTile').classList.toggle('hidden', eng);
+    if (eng) {
+      card.innerHTML = `<div class="user-row"><span>${esc(t('signedInAs', { n: me.full_name || me.email }))} · ${esc(t('role_engineering'))}</span><button type="button" class="secondary compact" id="signOutBtn">${esc(t('signOut'))}</button></div>`;
+      card.classList.remove('hidden');
+      $('#signOutBtn').onclick = async () => { if (confirm(t('confirmSignOut'))) { await EDPAuth.signOut(); location.reload(); } };
+      $('#dashTile').classList.add('hidden'); $('#setTile').classList.add('hidden'); return;
+    }
     const y = new Date().getFullYear(), target = me.vca_target != null ? me.vca_target : EDPAuth.CONFIG.target;
     let n = null;
     try {
@@ -214,12 +224,20 @@
 
   /* Events */
   document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => load(b.dataset.open));
+  /* Home ↔ Project Reports ↔ report. Commissioning lives under Project Reports, Site Safety on the home screen. */
+  function showView(v) {
+    $('#home').classList.toggle('hidden', v !== 'home'); $('#projects').classList.toggle('hidden', v !== 'projects');
+    $('#report').classList.add('hidden'); $('#actions').classList.add('hidden');
+    $('#backBtn').classList.toggle('hidden', v === 'home');
+    $('#appTitle').textContent = v === 'projects' ? t('tileProjTitle') : t('appName'); window.scrollTo(0, 0);
+    if (location.hash !== (v === 'projects' ? '#projects' : '')) history.replaceState(null, '', v === 'projects' ? '#projects' : location.pathname + location.search);
+  }
+  $('#projTile').onclick = () => showView('projects');
   $('#backBtn').onclick = () => {
-    if (type) save();
-    type = null;
-    $('#home').classList.remove('hidden'); $('#report').classList.add('hidden'); $('#actions').classList.add('hidden'); $('#backBtn').classList.add('hidden');
-    $('#appTitle').textContent = t('appName'); window.scrollTo(0, 0);
+    if (type) { save(); const from = type; type = null; showView(from === 'commissioning' ? 'projects' : 'home'); return; }
+    showView('home');
   };
+  if (location.hash === '#projects') showView('projects');
   $('#editBtn').onclick = () => { edit = !edit; $('#addQuestionBtn').classList.toggle('hidden', !edit); $('#editBtn').textContent = edit ? t('done') : t('editChecklist'); renderQuestions(); };
   $('#addQuestionBtn').onclick = () => { const label = prompt(t('questionName'), t('newQuestion')); if (label && label.trim()) { state.questions.push({ id: uid(), sectionKey: 'customQuestions', label: label.trim(), photosEnabled: true }); save(); renderQuestions(); } };
   $('#generalNotes').oninput = e => { state.generalNotes = e.target.value; save(); };
@@ -227,7 +245,7 @@
   $('#downloadBtn').onclick = () => { const b = makePdf(); if (b) EDP.download(b, filename()); };
   $('#shareBtn').onclick = () => { const b = makePdf(); if (b) EDP.deliver(b, filename(), t(modules[type].titleKey)).catch(e => { if (e && e.name !== 'AbortError') EDP.download(b, filename()); else toast(t('sharingCancelled')); }); };
 
-  I18N.onChange(() => { if (type) render(); else $('#appTitle').textContent = t('appName'); renderUserCard(); });
+  I18N.onChange(() => { if (type) render(); else $('#appTitle').textContent = $('#projects').classList.contains('hidden') ? t('appName') : t('tileProjTitle'); renderUserCard(); });
   EDP.initShell();
   EDPAuth.require().then(p => { me = p; renderUserCard(); });
   window.addEventListener('online', () => EDPAuth.flush().then(renderUserCard));

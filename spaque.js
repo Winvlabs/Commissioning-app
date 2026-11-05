@@ -69,15 +69,16 @@
         <ul class="parts-summary">${g.parts.map(n => `<li><strong>${n}</strong> · ${esc(partName(n))}</li>`).join('')}</ul>
         <div class="group-count">${esc(t('spPhotoCount', { n: photos.length }))}</div>
         ${EDP.photoPicker('', 'group-input')}
-        <div class="photos">${photos.map((p, i) => `<div class="photo" data-index="${i}"><img src="${p.photo}" alt="${esc(t('spSitePhoto', { n: i + 1 }))}"><button type="button" class="x" title="${esc(t('removePhoto'))}">×</button><textarea rows="2" placeholder="${esc(t('spPhotoNote', { n: i + 1 }))}">${esc(p.note)}</textarea></div>`).join('')}</div></section>`;
+        <div class="photos">${photos.map((p, i) => `<div class="photo" data-index="${i}"><img src="${p.photo}" alt="${esc(t('spSitePhoto', { n: i + 1 }))}"><button type="button" class="ed" title="${esc(t('drawEdit'))}">✏️</button><button type="button" class="x" title="${esc(t('removePhoto'))}">×</button><textarea rows="2" placeholder="${esc(t('spPhotoNote', { n: i + 1 }))}">${esc(p.note)}</textarea></div>`).join('')}</div></section>`;
     }).join('');
     $$('#partGroups .assembly-group').forEach(sec => {
       const photos = state.groupPhotos[sec.dataset.group];
-      EDP.bindPicker(sec, async files => { photos.push(...(await EDP.readPhotos(files)).map(p => ({ photo: p.data, note: '' }))); save(); renderParts(); });
+      EDP.bindPicker(sec, async added => { photos.push(...added.map(p => ({ photo: p.data, note: '' }))); save(); renderParts(); });
       sec.querySelectorAll('.photo').forEach(card => {
         const i = Number(card.dataset.index);
         card.querySelector('textarea').oninput = e => { photos[i].note = e.target.value; save(); };
         card.querySelector('.x').onclick = () => { photos.splice(i, 1); save(); renderParts(); };
+        card.querySelector('.ed').onclick = () => EDP.editPhoto(photos[i].photo, d => { photos[i].photo = d; save(); renderParts(); });
       });
     });
   }
@@ -94,7 +95,7 @@
         <div class="status">${['OK', 'NOK', 'N/A'].map(v => `<button type="button" data-v="${v}" class="${o.status === v ? 'sel ' + (v === 'OK' ? 'ok' : v === 'NOK' ? 'nok' : 'na') : ''}">${esc(t('st_' + v))}</button>`).join('')}</div>
         <textarea rows="2" placeholder="${esc(t('spRemark'))}">${esc(o.note)}</textarea>
         ${EDP.photoPicker()}
-        <div class="photos">${o.photos.map((p, i) => `<div class="photo" data-index="${i}"><img src="${p.data}" alt=""><button type="button" class="x" title="${esc(t('removePhoto'))}">×</button></div>`).join('')}</div></div>`;
+        <div class="photos">${o.photos.map((p, i) => `<div class="photo" data-index="${i}"><img src="${p.data}" alt=""><button type="button" class="ed" title="${esc(t('drawEdit'))}">✏️</button><button type="button" class="x" title="${esc(t('removePhoto'))}">×</button></div>`).join('')}</div></div>`;
     });
     $('#checkList').innerHTML = h;
     $$('#checkList .check').forEach(c => {
@@ -103,8 +104,8 @@
       c.querySelector('textarea').oninput = e => { o.note = e.target.value; save(); };
       const ed = c.querySelector('.editable');
       ed.oninput = () => { const v = ed.innerText.trim(); if (v && v !== t(o.key)) o.text = v; else delete o.text; save(); };
-      EDP.bindPicker(c, async files => { o.photos.push(...(await EDP.readPhotos(files)).map(p => ({ data: p.data }))); save(); renderChecks(); });
-      c.querySelectorAll('.photo').forEach(p => p.querySelector('.x').onclick = () => { o.photos.splice(Number(p.dataset.index), 1); save(); renderChecks(); });
+      EDP.bindPicker(c, async added => { o.photos.push(...added.map(p => ({ data: p.data }))); save(); renderChecks(); });
+      c.querySelectorAll('.photo').forEach(p => { const k = Number(p.dataset.index); p.querySelector('.x').onclick = () => { o.photos.splice(k, 1); save(); renderChecks(); }; p.querySelector('.ed').onclick = () => EDP.editPhoto(o.photos[k].data, d => { o.photos[k].data = d; save(); renderChecks(); }); });
       const r = c.querySelector('.reset'); if (r) r.onclick = () => { delete o.text; save(); renderChecks(); };
       const d = c.querySelector('.del'); if (d) d.onclick = () => { if (confirm(t('deleteQuestion'))) { state.checks = state.checks.filter(x => x !== o); save(); renderChecks(); } };
     });
@@ -130,14 +131,15 @@
   }
   function renderOverview() {
     const arr = overviewItems();
-    $('#photoOverview').innerHTML = arr.length ? arr.map((x, i) => `<div class="photoCard" data-i="${i}"><img src="${x.photo}" alt=""><strong>${esc(x.label)}</strong><textarea rows="2" placeholder="${esc(t('spPhotoDesc'))}">${esc(x.obj[x.field])}</textarea>${x.extra ? `<button type="button" class="btn danger compact del">${esc(t('del'))}</button>` : ''}</div>`).join('') : `<p class="muted">${esc(t('spNoPhotos'))}</p>`;
+    $('#photoOverview').innerHTML = arr.length ? arr.map((x, i) => `<div class="photoCard" data-i="${i}"><div class="pc-img"><img src="${x.photo}" alt=""><button type="button" class="ed" title="${esc(t('drawEdit'))}">✏️</button></div><strong>${esc(x.label)}</strong><textarea rows="2" placeholder="${esc(t('spPhotoDesc'))}">${esc(x.obj[x.field])}</textarea>${x.extra ? `<button type="button" class="btn danger compact del">${esc(t('del'))}</button>` : ''}</div>`).join('') : `<p class="muted">${esc(t('spNoPhotos'))}</p>`;
     $$('#photoOverview .photoCard').forEach(c => {
       const x = arr[Number(c.dataset.i)];
       c.querySelector('textarea').oninput = e => { x.obj[x.field] = e.target.value; save(); };
+      c.querySelector('.ed').onclick = () => EDP.editPhoto(x.photo, d => { if ('photo' in x.obj) x.obj.photo = d; else x.obj.data = d; save(); renderAll(); });
       const d = c.querySelector('.del'); if (d) d.onclick = () => { state.extra = state.extra.filter(o => o !== x.obj); save(); renderOverview(); };
     });
   }
-  function renderExtraPick() { $('#extraPick').innerHTML = EDP.photoPicker('', 'extra-in'); EDP.bindPicker($('#extraPick'), async files => { state.extra.push(...(await EDP.readPhotos(files)).map(p => ({ id: uid(), photo: p.data, note: '' }))); save(); renderOverview(); }); }
+  function renderExtraPick() { $('#extraPick').innerHTML = EDP.photoPicker('', 'extra-in'); EDP.bindPicker($('#extraPick'), async added => { state.extra.push(...added.map(p => ({ id: uid(), photo: p.data, note: '' }))); save(); renderOverview(); }); }
 
   /* ---------- PDF ---------- */
   function pdfBlob() {

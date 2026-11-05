@@ -1,10 +1,11 @@
 /* EDP Reports service worker.
    On every release: raise VERSION here, in common.js and in version.json (see README). */
-const VERSION = '4.8';
+const VERSION = '5.0';
 const CACHE = 'edp-reports-v' + VERSION;
-const ASSETS = ['./', './index.html', './spaque.html', './styles.css', './i18n.js', './common.js', './pdf-engine.js', './app.js', './spaque.js', './auth.js', './dashboard.html', './dashboard.js', './settings.html', './settings.js', './manifest.webmanifest',
+const ASSETS = ['./', './index.html', './spaque.html', './styles.css', './i18n.js', './common.js', './pdf-engine.js', './app.js', './spaque.js', './auth.js', './dashboard.html', './dashboard.js', './settings.html', './settings.js', './survey.html', './survey.js', './tools.js', './manifest.webmanifest',
   './assets/edp-logo.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/tech-ref.jpg',
-  './assets/ref-1.jpg', './assets/ref-2.jpg', './assets/ref-3.jpg', './assets/ref-4.jpg'];
+  './assets/ref-1.jpg', './assets/ref-2.jpg', './assets/ref-3.jpg', './assets/ref-4.jpg',
+  './assets/survey-ac-schema.jpg', './assets/survey-gutter.png', './assets/survey-roof-ridge.png', './assets/survey-roof-hip.png', './assets/survey-roof-shed.png', './assets/survey-trapezoid.png'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 /* Network first for everything (so a page and its code always come from the same version);

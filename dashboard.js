@@ -34,6 +34,8 @@
         EDPAuth.rest(`vca_manual_counts?select=user_id,count,note&year=eq.${y}`).catch(() => [])
       ]);
       manual = {}; man.forEach(m => { manual[m.user_id] = m; });
+      /* Engineering does no VCA inspections: leave them out (unless they still made some this year). */
+      profiles = profiles.filter(p => p.role !== 'engineering' || reports.some(r => r.user_id === p.id) || (manual[p.id] || {}).count);
       $('#saveStatus').textContent = new Date().toLocaleTimeString(I18N.lang, { hour: '2-digit', minute: '2-digit' });
     } catch (e) { toast(t('dashLoadError'), 4000); $('#saveStatus').textContent = ''; }
     const cur = $('#projSel').value;

@@ -1,9 +1,24 @@
 {
-  "version": "4.8",
-  "date": "2026-10-28",
+  "version": "5.0",
+  "date": "2026-11-05",
   "notes": {
-    "nl": ["Persoonlijk VCA-doel per jaar (bv. 4 voor de VCA-leidinggevende)", "VCA-rapport als PDF met grafieken en EDP-logo"],
-    "fr": ["Objectif VCA personnel par an (p. ex. 4 pour le responsable VCA)", "Rapport VCA en PDF avec graphiques et logo EDP"],
-    "en": ["Personal VCA target per year (e.g. 4 for the VCA supervisor)", "VCA report as PDF with charts and EDP logo"]
+    "nl": [
+      "Nieuw: Projectrapporten met Commissioning, SPAQUE en het nieuwe Site Survey-rapport",
+      "Foto + tekening: teken pijlen, kaders, tekst en nummers op je foto’s",
+      "Overzichtskaart (satelliet) van het project met genummerde aanduidingen",
+      "Nieuwe rol Engineering: alleen projectrapporten, geen VCA-inspecties"
+    ],
+    "fr": [
+      "Nouveau : Rapports de projet avec mise en service, SPAQUE et le nouveau rapport de visite de site",
+      "Photo + dessin : flèches, cadres, texte et numéros sur vos photos",
+      "Plan d’ensemble (satellite) du projet avec repères numérotés",
+      "Nouveau rôle Engineering : rapports de projet uniquement, pas d’inspections VCA"
+    ],
+    "en": [
+      "New: Project Reports with Commissioning, SPAQUE and the new Site Survey report",
+      "Photo + drawing: draw arrows, boxes, text and numbers on your photos",
+      "Overview map (satellite) of the project with numbered markers",
+      "New Engineering role: project reports only, no VCA inspections"
+    ]
   }
 }

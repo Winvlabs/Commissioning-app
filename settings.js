@@ -3,7 +3,7 @@
   'use strict';
   const { t, esc, toast } = EDP;
   const $ = s => document.querySelector(s);
-  const ROLES = ['worker', 'supervisor', 'admin'];
+  const ROLES = ['worker', 'engineering', 'supervisor', 'admin'];
   let me = null, profiles = [], invites = [];
 
   const STD = EDPAuth.CONFIG.target;
@@ -31,7 +31,7 @@
     const list = profiles.filter(p => !q || (p.full_name + ' ' + p.email).toLowerCase().includes(q));
     $('#userList').innerHTML = list.length ? list.map(p => `<div class="user-item">
         <div class="who"><strong>${esc(p.full_name || '—')}${p.id === me.id ? ` <small class="muted">(${esc(t('setYou'))})</small>` : ''}</strong><small class="muted">${esc(p.email)}</small></div>
-        <div class="what">${p.id === me.id ? `<span class="pill track">${esc(t('role_' + p.role))}</span>` : roleSelect(p.role, `data-id="${p.id}"`)}<small class="muted">${esc(t('setRoleHelp_' + p.role))}</small>${targetInput(p.vca_target, `data-target="${p.id}"`)}</div>
+        <div class="what">${p.id === me.id ? `<span class="pill track">${esc(t('role_' + p.role))}</span>` : roleSelect(p.role, `data-id="${p.id}"`)}<small class="muted">${esc(t('setRoleHelp_' + p.role))}</small>${p.role === 'engineering' ? '' : targetInput(p.vca_target, `data-target="${p.id}"`)}</div>
       </div>`).join('') : `<p class="muted">${esc(t('dashNone'))}</p>`;
     document.querySelectorAll('[data-target]').forEach(inp => inp.onchange = async () => {
       const p = profiles.find(x => x.id === inp.dataset.target), v = parseTarget(inp.value);
@@ -54,10 +54,10 @@
 
     $('#inviteList').innerHTML = invites.length ? invites.map(i => `<div class="user-item">
         <div class="who"><strong>${esc(i.email)}</strong></div>
-        <div class="what">${roleSelect(i.role, `data-email="${esc(i.email)}"`)}${targetInput(i.vca_target, `data-itarget="${esc(i.email)}"`)}<button type="button" class="secondary compact" data-del="${esc(i.email)}">${esc(t('setRemove'))}</button></div>
+        <div class="what">${roleSelect(i.role, `data-email="${esc(i.email)}"`)}${i.role === 'engineering' ? '' : targetInput(i.vca_target, `data-itarget="${esc(i.email)}"`)}<button type="button" class="secondary compact" data-del="${esc(i.email)}">${esc(t('setRemove'))}</button></div>
       </div>`).join('') : `<p class="muted">${esc(t('setInviteNone'))}</p>`;
     document.querySelectorAll('#inviteList select').forEach(sel => sel.onchange = async () => {
-      try { await EDPAuth.rest('extra_allowed_emails?email=eq.' + encodeURIComponent(sel.dataset.email), { method: 'PATCH', body: { role: sel.value }, headers: { Prefer: 'return=minimal' } }); invites.find(i => i.email === sel.dataset.email).role = sel.value; toast(t('dashRoleSaved')); }
+      try { await EDPAuth.rest('extra_allowed_emails?email=eq.' + encodeURIComponent(sel.dataset.email), { method: 'PATCH', body: { role: sel.value }, headers: { Prefer: 'return=minimal' } }); invites.find(i => i.email === sel.dataset.email).role = sel.value; toast(t('dashRoleSaved')); render(); }
       catch (e) { toast(t('setSaveError'), 4000); }
     });
     document.querySelectorAll('[data-itarget]').forEach(inp => inp.onchange = async () => {

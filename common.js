@@ -182,12 +182,40 @@
   }
 
   /* Two photo buttons: take a photo with the camera, or pick existing photos from the gallery */
+  /* Photo buttons: take a photo, pick from gallery, or take a photo and draw on it.
+     The handler receives an array of { data, name } (compressed JPEG data URLs). */
   function photoPicker(cls = '', galCls = '') {
-    return `<div class="photo-pick ${cls}"><label class="photoAdd"><span>${esc(t('photoTake'))}</span><input type="file" accept="image/*" capture="environment" class="cam-in"></label>` +
-      `<label class="photoAdd"><span>${esc(t('photoGallery'))}</span><input type="file" accept="image/*" multiple class="gal-in ${galCls}"></label></div>`;
+    const draw = global.EDPTools ? `<label class="photoAdd draw"><span>${esc(t('photoDraw'))}</span><input type="file" accept="image/*" capture="environment" class="draw-in"></label>` : '';
+    return `<div class="photo-pick ${draw ? 'three' : ''} ${cls}"><label class="photoAdd"><span>${esc(t('photoTake'))}</span><input type="file" accept="image/*" capture="environment" class="cam-in"></label>` +
+      `<label class="photoAdd"><span>${esc(t('photoGallery'))}</span><input type="file" accept="image/*" multiple class="gal-in ${galCls}"></label>${draw}</div>`;
   }
   function bindPicker(root, handler) {
-    root.querySelectorAll('.photo-pick input[type=file]').forEach(inp => inp.onchange = async e => { const f = [...e.target.files]; e.target.value = ''; if (f.length) await handler(f); });
+    root.querySelectorAll('.photo-pick input[type=file]').forEach(inp => inp.onchange = async e => {
+      const f = [...e.target.files]; e.target.value = ''; if (!f.length) return;
+      let photos = await readPhotos(f);
+      if (inp.classList.contains('draw-in') && global.EDPTools) {
+        const out = [];
+        for (const p of photos) { const d = await global.EDPTools.annotate(p.data); out.push(d ? { data: d, name: p.name } : p); }
+        photos = out;
+      }
+      if (photos.length) await handler(photos);
+    });
+  }
+  /* Small ✏️ button to draw on an existing photo; calls done(newDataUrl) */
+  async function editPhoto(data, done) { if (!global.EDPTools) return; const d = await global.EDPTools.annotate(data); if (d) done(d); }
+
+  /* Larger storage (IndexedDB) for reports with many photos; falls back to localStorage */
+  const idb = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => { const r = indexedDB.open('edp-reports', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
+    const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t2 = db.transaction('kv', mode), st = t2.objectStore('kv'); const q = fn(st); t2.oncomplete = () => res(q && q.result); t2.onerror = () => rej(t2.error); }); };
+    return { get: k => tx('readonly', st => st.get(k)), set: (k, v) => tx('readwrite', st => st.put(v, k)) };
+  })();
+  async function bigLoad(key) { try { const v = await idb.get(key); if (v != null) return v; } catch (e) {} return load(key); }
+  async function bigSave(key, obj) {
+    const status = document.getElementById('saveStatus');
+    try { await idb.set(key, obj); if (status) { status.textContent = t('saved'); status.classList.remove('error'); } return true; }
+    catch (e) { return safeSave(key, obj); }
   }
 
   function initShell() {
@@ -201,6 +229,6 @@
     global.I18N.apply();
   }
 
-  const VERSION = '4.8';
-  global.EDP = { t, esc, today, uid, toast, safeSave, load, compressPhoto, readPhotos, ensureJpeg, jpegSync, imageData, pdfHeader, pdfFooter, deliver, download, safeName, initShell, showInstallHelp, photoPicker, bindPicker, checkForUpdate, VERSION };
+  const VERSION = '5.0';
+  global.EDP = { t, esc, today, uid, toast, safeSave, load, compressPhoto, readPhotos, ensureJpeg, jpegSync, imageData, pdfHeader, pdfFooter, deliver, download, safeName, initShell, showInstallHelp, photoPicker, bindPicker, editPhoto, bigLoad, bigSave, checkForUpdate, VERSION };
 })(window);
