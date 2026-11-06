@@ -1,18 +1,15 @@
 {
-  "version": "5.1",
-  "date": "2026-11-05",
+  "version": "5.2",
+  "date": "2026-11-06",
   "notes": {
     "nl": [
-      "AC-schema: rechtstreeks invullen met potlood of getypte tekst, teksten verplaatsen en later nog aanpassen",
-      "Tekenen: inzoomen met twee vingers of ＋/－, tekst typen zonder pop-up, ✋ om tekst en nummers te verplaatsen"
+      "PDF versturen werkt beter op Samsung en andere Android-toestellen: lukt het niet meteen, dan kan je opnieuw tikken op \"PDF versturen\" of de PDF downloaden"
     ],
     "fr": [
-      "Schéma AC : à compléter directement au crayon ou en texte tapé, textes déplaçables et modifiables plus tard",
-      "Dessin : zoom à deux doigts ou ＋/－, texte tapé sans fenêtre, ✋ pour déplacer textes et numéros"
+      "Envoi du PDF amélioré sur Samsung et autres Android : si l’envoi ne s’ouvre pas, touchez à nouveau « Envoyer PDF » ou téléchargez le PDF"
     ],
     "en": [
-      "AC schema: fill in directly with pencil or typed text, move texts and change them later",
-      "Drawing: zoom with two fingers or ＋/－, type text without a pop-up, ✋ to move texts and numbers"
+      "Sending the PDF works better on Samsung and other Android phones: if it does not open right away, tap \"Send PDF\" again or download the PDF"
     ]
   }
 }

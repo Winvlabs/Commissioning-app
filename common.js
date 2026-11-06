@@ -98,12 +98,39 @@
   }
   function pdfFooter(doc) { doc.addFooters('EDP', (i, n) => t('page', { i, n })); }
 
-  function deliver(blob, filename, title) {
+  /* Send the PDF via the phone's share sheet (mail, Teams, WhatsApp …).
+     Some phones/browsers refuse the share (e.g. Samsung Internet, or when the click "expired" while the PDF was being built).
+     Then we show a small sheet: tapping "Send PDF" there tries again with a fresh tap, or download it instead. */
+  async function deliver(blob, filename, title) {
     const file = new File([blob], filename, { type: 'application/pdf' });
-    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-      return navigator.share({ title, files: [file] });
+    const can = !!navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }));
+    if (can) {
+      try { await navigator.share({ title, files: [file] }); return; }
+      catch (e) { if (e && e.name === 'AbortError') throw e; console.warn('share failed', e); }
     }
-    download(blob, filename); return Promise.resolve();
+    sendSheet(blob, file, filename, title, can);
+  }
+  function sendSheet(blob, file, filename, title, can) {
+    const old = document.getElementById('sendModal'); if (old) old.remove();
+    const samsung = /SamsungBrowser/i.test(navigator.userAgent);
+    const m = document.createElement('div'); m.id = 'sendModal'; m.className = 'modal';
+    m.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true"><h2>📄 ${esc(t('sendReady'))}</h2>
+      <p class="muted">${esc(filename)}</p>
+      ${can ? `<button type="button" class="primary full" id="sendAgain">${esc(t('sendPdf'))}</button>` : `<p>${esc(t('sendNoShare'))}</p>`}
+      ${samsung ? `<p class="muted small">${esc(t('sendSamsung'))}</p>` : ''}
+      <button type="button" class="secondary full" id="sendDl">${esc(t('downloadPdf'))}</button>
+      <button type="button" class="secondary full" id="sendClose">${esc(t('instClose'))}</button></div>`;
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    m.addEventListener('click', e => { if (e.target === m) close(); });
+    m.querySelector('#sendClose').onclick = close;
+    m.querySelector('#sendDl').onclick = () => { download(blob, filename); toast(t('sendDownloaded'), 4500); close(); };
+    const again = m.querySelector('#sendAgain');
+    if (again) again.onclick = () => navigator.share({ title, files: [file] }).then(close).catch(e => {
+      if (e && e.name === 'AbortError') return;
+      console.warn('share failed again', e); again.remove();
+      const p = document.createElement('p'); p.textContent = t('sendNoShare'); m.querySelector('.muted').after(p);
+    });
   }
   function download(blob, filename) {
     const u = URL.createObjectURL(blob), a = document.createElement('a');
@@ -229,6 +256,6 @@
     global.I18N.apply();
   }
 
-  const VERSION = '5.1';
+  const VERSION = '5.2';
   global.EDP = { t, esc, today, uid, toast, safeSave, load, compressPhoto, readPhotos, ensureJpeg, jpegSync, imageData, pdfHeader, pdfFooter, deliver, download, safeName, initShell, showInstallHelp, photoPicker, bindPicker, editPhoto, bigLoad, bigSave, checkForUpdate, VERSION };
 })(window);
