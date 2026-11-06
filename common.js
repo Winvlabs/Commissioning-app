@@ -104,11 +104,12 @@
   async function deliver(blob, filename, title) {
     const file = new File([blob], filename, { type: 'application/pdf' });
     const can = !!navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }));
+    /* Some browsers (Samsung Internet) say "no" to canShare but still have navigator.share – the sheet lets them try anyway */
     if (can) {
       try { await navigator.share({ title, files: [file] }); return; }
       catch (e) { if (e && e.name === 'AbortError') throw e; console.warn('share failed', e); }
     }
-    sendSheet(blob, file, filename, title, can);
+    sendSheet(blob, file, filename, title, !!navigator.share);
   }
   function sendSheet(blob, file, filename, title, can) {
     const old = document.getElementById('sendModal'); if (old) old.remove();
@@ -117,7 +118,7 @@
     m.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true"><h2>📄 ${esc(t('sendReady'))}</h2>
       <p class="muted">${esc(filename)}</p>
       ${can ? `<button type="button" class="primary full" id="sendAgain">${esc(t('sendPdf'))}</button>` : `<p>${esc(t('sendNoShare'))}</p>`}
-      ${samsung ? `<p class="muted small">${esc(t('sendSamsung'))}</p>` : ''}
+      ${samsung ? `<p class="muted small">${esc(t('sendSamsung'))}</p><a class="btn secondary full" id="sendChrome" href="intent://${location.host}${location.pathname.replace(/[^/]*$/, '')}index.html#Intent;scheme=https;package=com.android.chrome;end">${esc(t('sendOpenChrome'))}</a>` : ''}
       <button type="button" class="secondary full" id="sendDl">${esc(t('downloadPdf'))}</button>
       <button type="button" class="secondary full" id="sendClose">${esc(t('instClose'))}</button></div>`;
     document.body.appendChild(m);
@@ -256,6 +257,6 @@
     global.I18N.apply();
   }
 
-  const VERSION = '5.2';
+  const VERSION = '5.3';
   global.EDP = { t, esc, today, uid, toast, safeSave, load, compressPhoto, readPhotos, ensureJpeg, jpegSync, imageData, pdfHeader, pdfFooter, deliver, download, safeName, initShell, showInstallHelp, photoPicker, bindPicker, editPhoto, bigLoad, bigSave, checkForUpdate, VERSION };
 })(window);

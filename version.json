@@ -1,15 +1,15 @@
 {
-  "version": "5.2",
+  "version": "5.3",
   "date": "2026-11-06",
   "notes": {
     "nl": [
-      "PDF versturen werkt beter op Samsung en andere Android-toestellen: lukt het niet meteen, dan kan je opnieuw tikken op \"PDF versturen\" of de PDF downloaden"
+      "Samsung Internet: duidelijke uitleg en knop om de app in Chrome te openen, zodat PDF versturen werkt"
     ],
     "fr": [
-      "Envoi du PDF amélioré sur Samsung et autres Android : si l’envoi ne s’ouvre pas, touchez à nouveau « Envoyer PDF » ou téléchargez le PDF"
+      "Samsung Internet : explication claire et bouton pour ouvrir l’app dans Chrome, pour que l’envoi du PDF fonctionne"
     ],
     "en": [
-      "Sending the PDF works better on Samsung and other Android phones: if it does not open right away, tap \"Send PDF\" again or download the PDF"
+      "Samsung Internet: clear explanation and a button to open the app in Chrome, so sending the PDF works"
     ]
   }
 }
